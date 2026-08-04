@@ -1,0 +1,31 @@
+{
+  "prefer_backend": "auto",
+  "cycle": {
+    "refrigerant": "R32",
+    "T_evap_c": 7.0,
+    "T_cond_c": 45.0,
+    "superheat_k": 5.0,
+    "subcool_k": 5.0,
+    "dP_suction_kpa": 0.0,
+    "dP_discharge_kpa": 0.0
+  },
+  "compressor": {
+    "v_disp_cc": 20.0,
+    "eff_preset": "SCROLL_DEFAULT",
+    "drive_mode": "SPEED_DRIVEN",
+    "rpm": 3600.0
+  },
+  "motor": {
+    "_주석": "Ld_mH / Lq_mH / Rs_ohm 은 모두 상(phase) 값. LCR 선간 측정값이면 2로 나눌 것.",
+    "Ld_mH": 3.0,
+    "Lq_mH": 6.0,
+    "ke_vrms_krpm": 30.78,
+    "ke_reference": "LINE_TO_LINE",
+    "pole_pairs": 3,
+    "Rs_ohm": 0.5,
+    "i_max_A": 20.0,
+    "V_dc": 310.0,
+    "k_margin": 0.95,
+    "modulation": "SVPWM"
+  }
+}

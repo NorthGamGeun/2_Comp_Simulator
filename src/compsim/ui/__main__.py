@@ -1,0 +1,8 @@
+"""`python -m compsim.ui` 로 UI 를 실행한다."""
+
+from __future__ import annotations
+
+from .main_window import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())

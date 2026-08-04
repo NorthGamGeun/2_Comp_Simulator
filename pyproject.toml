@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "compsim"
+version = "0.1.0"
+description = "에어컨 압축기 가동 타당성 판별 시뮬레이터 (열역학 + PMSM 전자기 결합)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+# 물리적 정확도를 위한 필수 실전 의존성 (plan.md D-정확도 원칙).
+# 미설치 시 ReferenceGasBackend 로 폴백되지만 설계 판단에는 사용 금지.
+accurate = ["CoolProp>=6.4"]
+ui = ["PyQt6>=6.5", "pyqtgraph>=0.13"]
+dev = ["pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.4"]
+all = ["CoolProp>=6.4", "PyQt6>=6.5", "pyqtgraph>=0.13", "pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.4"]
+
+[project.scripts]
+compsim = "compsim.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+markers = [
+    "requires_coolprop: CoolProp 설치 환경에서만 실행되는 정밀도 테스트",
+    "slow: 느린 스윕 테스트",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E741"]

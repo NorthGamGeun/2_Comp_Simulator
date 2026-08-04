@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: compsim
+Version: 0.1.0
+Summary: 에어컨 압축기 가동 타당성 판별 시뮬레이터 (열역학 + PMSM 전자기 결합)
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.24
+Provides-Extra: accurate
+Requires-Dist: CoolProp>=6.4; extra == "accurate"
+Provides-Extra: ui
+Requires-Dist: PyQt6>=6.5; extra == "ui"
+Requires-Dist: pyqtgraph>=0.13; extra == "ui"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4; extra == "dev"
+Requires-Dist: pytest-cov>=4.1; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"
+Provides-Extra: all
+Requires-Dist: CoolProp>=6.4; extra == "all"
+Requires-Dist: PyQt6>=6.5; extra == "all"
+Requires-Dist: pyqtgraph>=0.13; extra == "all"
+Requires-Dist: pytest>=7.4; extra == "all"
+Requires-Dist: pytest-cov>=4.1; extra == "all"
+Requires-Dist: ruff>=0.4; extra == "all"
