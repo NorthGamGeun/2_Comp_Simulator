@@ -142,12 +142,12 @@ class InputPanel(QtWidgets.QWidget):
                 )
                 f.addRow("환산 결과", self.lbl_derived)
 
-                # 모터 저장/불러오기 버튼
+                # 설정 저장/불러오기 버튼
                 btn_row = QtWidgets.QHBoxLayout()
-                self.btn_motor_save = QtWidgets.QPushButton("모터 저장")
-                self.btn_motor_load = QtWidgets.QPushButton("모터 불러오기")
-                self.btn_motor_save.setToolTip("현재 모터 파라미터를 JSON 파일로 저장합니다.")
-                self.btn_motor_load.setToolTip("저장된 모터 파라미터를 불러옵니다.")
+                self.btn_motor_save = QtWidgets.QPushButton("설정 저장")
+                self.btn_motor_load = QtWidgets.QPushButton("설정 불러오기")
+                self.btn_motor_save.setToolTip("냉매·사이클, 압축기, 모터 파라미터를 JSON 파일로 저장합니다.")
+                self.btn_motor_load.setToolTip("저장된 설정 파일을 불러옵니다.")
                 btn_row.addWidget(self.btn_motor_save)
                 btn_row.addWidget(self.btn_motor_load)
                 f.addRow(btn_row)
@@ -209,19 +209,30 @@ class InputPanel(QtWidgets.QWidget):
             setattr(u, spec.attr, int(val) if spec.attr == "pole_pairs" else val)
         return u
 
-    # --- 모터 저장/불러오기 ------------------------------------------------
+    # --- 설정 저장/불러오기 ------------------------------------------------
     _MOTOR_SAVE_ATTRS = [s.attr for s in MOTOR_FIELDS]
+    _COMPRESSOR_SAVE_ATTRS = [s.attr for s in COMPRESSOR_FIELDS]
+    _CYCLE_SAVE_ATTRS = [s.attr for s in CYCLE_FIELDS]
 
     def _save_motor(self) -> None:
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "모터 파라미터 저장", "", "JSON 파일 (*.json);;모든 파일 (*)"
+            self, "설정 저장", "", "JSON 파일 (*.json);;모든 파일 (*)"
         )
         if not path:
             return
         data: dict[str, object] = {}
+        # 냉매 · 사이클
+        data["refrigerant"] = self.cb_ref.currentText()
+        for attr in self._CYCLE_SAVE_ATTRS:
+            data[attr] = self._spins[attr].value()
+        # 압축기
+        data["drive_mode"] = "SPEED_DRIVEN" if self.cb_mode.currentIndex() == 0 else "FLOW_DRIVEN"
+        data["eff_preset"] = self.cb_preset.currentText()
+        for attr in self._COMPRESSOR_SAVE_ATTRS:
+            data[attr] = self._spins[attr].value()
+        # 모터
         for attr in self._MOTOR_SAVE_ATTRS:
             data[attr] = self._spins[attr].value()
-        # Ke 기준과 RMS 체크도 함께 저장
         data["ke_reference"] = "LINE_TO_LINE" if self.cb_ke_ref.currentIndex() == 0 else "PHASE"
         data["current_is_rms"] = self.chk_rms.isChecked()
         data["modulation"] = self.cb_mod.currentText()
@@ -229,7 +240,7 @@ class InputPanel(QtWidgets.QWidget):
 
     def _load_motor(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "모터 파라미터 불러오기", "", "JSON 파일 (*.json);;모든 파일 (*)"
+            self, "설정 불러오기", "", "JSON 파일 (*.json);;모든 파일 (*)"
         )
         if not path:
             return
@@ -238,6 +249,26 @@ class InputPanel(QtWidgets.QWidget):
         except (json.JSONDecodeError, OSError) as e:
             QtWidgets.QMessageBox.warning(self, "불러오기 실패", str(e))
             return
+        # 냉매 · 사이클
+        if "refrigerant" in data:
+            idx = self.cb_ref.findText(data["refrigerant"])
+            if idx >= 0:
+                self.cb_ref.setCurrentIndex(idx)
+        for attr in self._CYCLE_SAVE_ATTRS:
+            if attr in data:
+                self._spins[attr].setValue(float(data[attr]))
+        # 압축기
+        if "drive_mode" in data:
+            idx = 0 if data["drive_mode"] == "SPEED_DRIVEN" else 1
+            self.cb_mode.setCurrentIndex(idx)
+        if "eff_preset" in data:
+            idx = self.cb_preset.findText(data["eff_preset"])
+            if idx >= 0:
+                self.cb_preset.setCurrentIndex(idx)
+        for attr in self._COMPRESSOR_SAVE_ATTRS:
+            if attr in data:
+                self._spins[attr].setValue(float(data[attr]))
+        # 모터
         for attr in self._MOTOR_SAVE_ATTRS:
             if attr in data:
                 self._spins[attr].setValue(float(data[attr]))
