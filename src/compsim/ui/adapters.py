@@ -58,7 +58,7 @@ class UiInputs:
     v_disp_cc: float = 20.0
     eff_preset: str = "스크롤 (기본)"
     drive_mode: str = "SPEED_DRIVEN"
-    rpm: float = 3600.0
+    freq_hz: float = 180.0  # 전기 주파수 [Hz] (= rpm * pole_pairs / 60)
     m_dot_kg_h: float = 100.0
 
     # 모터
@@ -110,8 +110,8 @@ class UiInputs:
             raise InputError("최대 전류와 직류단 전압은 0보다 커야 합니다.")
         if not 0.0 < self.k_margin <= 1.0:
             raise InputError("전압 마진 계수는 (0, 1] 범위여야 합니다.")
-        if self.drive_mode == "SPEED_DRIVEN" and self.rpm <= 0.0:
-            raise InputError("회전수는 0보다 커야 합니다.")
+        if self.drive_mode == "SPEED_DRIVEN" and self.freq_hz <= 0.0:
+            raise InputError("전기 주파수는 0보다 커야 합니다.")
         if self.drive_mode == "FLOW_DRIVEN" and self.m_dot_kg_h <= 0.0:
             raise InputError("질량 유량은 0보다 커야 합니다.")
 
@@ -142,6 +142,11 @@ class UiInputs:
         표현**일 뿐이며, 여기서 단 한 번 환산된다.
         """
         return lambda_pm_from_ke(self.ke_vrms_krpm, int(self.pole_pairs), self.ke_reference)
+
+    @property
+    def rpm(self) -> float:
+        """전기 주파수 [Hz] -> 기계 회전수 [rpm]. rpm = freq_hz * 60 / pole_pairs."""
+        return self.freq_hz * 60.0 / self.pole_pairs
 
     def back_emf_at(self, rpm: float) -> float:
         """해당 회전수의 무부하 선간 역기전력 실효값 [V] — 실측 대조용."""
@@ -224,7 +229,9 @@ CYCLE_FIELDS = [
 
 COMPRESSOR_FIELDS = [
     FieldSpec("v_disp_cc", "행정체적", "cc/rev", 2, 0.1, 500.0, 1.0, "압축기"),
-    FieldSpec("rpm", "회전수", "rpm", 0, 60.0, 60000.0, 100.0, "압축기"),
+    FieldSpec("freq_hz", "회전수 (전기 주파수)", "Hz", 1, 1.0, 1000.0, 5.0, "압축기",
+             {"tip": "전기 주파수 [Hz] = 기계 회전수[rpm] × 극쌍수 / 60\n"
+                     "기계 rpm = Hz × 60 / 극쌍수"}),
     FieldSpec("m_dot_kg_h", "질량 유량", "kg/h", 1, 0.1, 5000.0, 5.0, "압축기"),
 ]
 

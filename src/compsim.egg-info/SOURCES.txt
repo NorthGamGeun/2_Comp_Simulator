@@ -27,16 +27,8 @@ src/compsim/ui/__main__.py
 src/compsim/ui/adapters.py
 src/compsim/ui/main_window.py
 src/compsim/ui/viewmodel.py
-tests/test_cli.py
 tests/test_control.py
-tests/test_efficiency.py
 tests/test_evaluator.py
-tests/test_golden_regression.py
-tests/test_limits.py
-tests/test_numerics.py
-tests/test_pmsm.py
 tests/test_refrigerant.py
 tests/test_thermal_gate.py
-tests/test_thermo_cycle.py
 tests/test_ui_layer.py
-tests/test_units.py

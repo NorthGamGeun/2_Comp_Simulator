@@ -10,7 +10,9 @@
 
 from __future__ import annotations
 
+import json
 import sys
+from pathlib import Path
 
 try:
     import pyqtgraph as pg
@@ -139,6 +141,18 @@ class InputPanel(QtWidgets.QWidget):
                     "color:#3c4043; background:#f1f3f4; border-radius:4px; padding:6px;"
                 )
                 f.addRow("환산 결과", self.lbl_derived)
+
+                # 모터 저장/불러오기 버튼
+                btn_row = QtWidgets.QHBoxLayout()
+                self.btn_motor_save = QtWidgets.QPushButton("모터 저장")
+                self.btn_motor_load = QtWidgets.QPushButton("모터 불러오기")
+                self.btn_motor_save.setToolTip("현재 모터 파라미터를 JSON 파일로 저장합니다.")
+                self.btn_motor_load.setToolTip("저장된 모터 파라미터를 불러옵니다.")
+                btn_row.addWidget(self.btn_motor_save)
+                btn_row.addWidget(self.btn_motor_load)
+                f.addRow(btn_row)
+                self.btn_motor_save.clicked.connect(self._save_motor)
+                self.btn_motor_load.clicked.connect(self._load_motor)
             outer.addWidget(box)
 
         self.btn = QtWidgets.QPushButton("재계산 (Ctrl+R)")
@@ -154,7 +168,7 @@ class InputPanel(QtWidgets.QWidget):
 
     def _sync_mode(self) -> None:
         speed = self.cb_mode.currentIndex() == 0
-        self._spins["rpm"].setEnabled(speed)
+        self._spins["freq_hz"].setEnabled(speed)
         self._spins["m_dot_kg_h"].setEnabled(not speed)
 
     def _update_derived(self) -> None:
@@ -169,10 +183,12 @@ class InputPanel(QtWidgets.QWidget):
             self.lbl_derived.setText("—")
             return
         i_ch = lam / (u.Ld_mH * 1e-3) if u.Ld_mH > 0 else float("inf")
+        rpm_val = u.rpm
         self.lbl_derived.setText(
             f"λpm = <b>{lam:.5f} Wb</b> (상 peak)<br>"
             f"1000 rpm 무부하 선간 역기전력 = <b>{e1000:.2f} Vrms</b><br>"
-            f"특성 전류 i_ch = λpm/Ld = <b>{i_ch:.2f} A</b>"
+            f"특성 전류 i_ch = λpm/Ld = <b>{i_ch:.2f} A</b><br>"
+            f"기계 회전수 = <b>{rpm_val:.0f} rpm</b> ({u.freq_hz:.1f} Hz × 60 / {u.pole_pairs})"
         )
 
     def _on_change(self) -> None:
@@ -192,6 +208,49 @@ class InputPanel(QtWidgets.QWidget):
             val = self._spins[spec.attr].value()
             setattr(u, spec.attr, int(val) if spec.attr == "pole_pairs" else val)
         return u
+
+    # --- 모터 저장/불러오기 ------------------------------------------------
+    _MOTOR_SAVE_ATTRS = [s.attr for s in MOTOR_FIELDS]
+
+    def _save_motor(self) -> None:
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "모터 파라미터 저장", "", "JSON 파일 (*.json);;모든 파일 (*)"
+        )
+        if not path:
+            return
+        data: dict[str, object] = {}
+        for attr in self._MOTOR_SAVE_ATTRS:
+            data[attr] = self._spins[attr].value()
+        # Ke 기준과 RMS 체크도 함께 저장
+        data["ke_reference"] = "LINE_TO_LINE" if self.cb_ke_ref.currentIndex() == 0 else "PHASE"
+        data["current_is_rms"] = self.chk_rms.isChecked()
+        data["modulation"] = self.cb_mod.currentText()
+        Path(path).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def _load_motor(self) -> None:
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "모터 파라미터 불러오기", "", "JSON 파일 (*.json);;모든 파일 (*)"
+        )
+        if not path:
+            return
+        try:
+            data = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            QtWidgets.QMessageBox.warning(self, "불러오기 실패", str(e))
+            return
+        for attr in self._MOTOR_SAVE_ATTRS:
+            if attr in data:
+                self._spins[attr].setValue(float(data[attr]))
+        if "ke_reference" in data:
+            idx = 0 if data["ke_reference"] == "LINE_TO_LINE" else 1
+            self.cb_ke_ref.setCurrentIndex(idx)
+        if "current_is_rms" in data:
+            self.chk_rms.setChecked(bool(data["current_is_rms"]))
+        if "modulation" in data:
+            idx = self.cb_mod.findText(data["modulation"])
+            if idx >= 0:
+                self.cb_mod.setCurrentIndex(idx)
+        self._on_change()
 
 
 # ===========================================================================
@@ -382,7 +441,8 @@ class MainWindow(QtWidgets.QMainWindow):
             pts = sweep_speed(req, rpms, n_scan=150)
             boundary = max_feasible_speed(req, rpm_lo=300.0, rpm_hi=rpm_hi, tol_rpm=25.0)
             self.sweep.render(build_sweep_plot(pts, boundary))
-            msg = f"최대 가동 회전수 약 {boundary:.0f} rpm"
+            boundary_hz = boundary * ui.pole_pairs / 60.0
+            msg = f"최대 가동 회전수 약 {boundary:.0f} rpm ({boundary_hz:.1f} Hz)"
         else:
             msg = "FLOW_DRIVEN 모드 — 속도 스윕은 SPEED_DRIVEN 에서만 제공됩니다."
 

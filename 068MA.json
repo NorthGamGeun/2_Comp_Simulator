@@ -1,0 +1,13 @@
+{
+  "Ld_mH": 2.09,
+  "Lq_mH": 3.51,
+  "ke_vrms_krpm": 55.4,
+  "pole_pairs": 3.0,
+  "Rs_ohm": 0.108,
+  "i_max_A": 10.0,
+  "V_dc": 540.0,
+  "k_margin": 0.95,
+  "ke_reference": "LINE_TO_LINE",
+  "current_is_rms": true,
+  "modulation": "SVPWM"
+}

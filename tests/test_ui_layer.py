@@ -61,7 +61,7 @@ def test_constant_efficiency_path_reproduces_hand_calc():
 
 
 def test_unit_conversion_reaches_si():
-    u = UiInputs(prefer_backend="reference", v_disp_cc=20.0, Ld_mH=3.0, rpm=3600.0)
+    u = UiInputs(prefer_backend="reference", v_disp_cc=20.0, Ld_mH=3.0, freq_hz=180.0)
     req = u.to_request()
     assert_abs(req.compressor.V_disp, 20e-6, tol=1e-12)
     assert_abs(req.motor.Ld, 3e-3, tol=1e-12)
@@ -90,7 +90,7 @@ def test_invalid_inputs_raise_input_error_with_korean_message():
         UiInputs(pole_pairs=0),
         UiInputs(i_max_A=0.0),
         UiInputs(k_margin=1.5),
-        UiInputs(drive_mode="SPEED_DRIVEN", rpm=0.0),
+        UiInputs(drive_mode="SPEED_DRIVEN", freq_hz=0.0),
         UiInputs(drive_mode="FLOW_DRIVEN", m_dot_kg_h=0.0),
     ]
     for u in cases:
@@ -143,7 +143,9 @@ def test_field_defaults_are_within_declared_range():
 # viewmodel — dq 플롯
 # ===========================================================================
 def _verdict(rpm: float = 3600.0):
-    u = UiInputs(prefer_backend="reference", rpm=rpm)
+    # rpm -> freq_hz: freq_hz = rpm * pole_pairs / 60, default pole_pairs=3
+    freq = rpm * 3 / 60.0
+    u = UiInputs(prefer_backend="reference", freq_hz=freq)
     req = u.to_request()
     return evaluate(req), req.motor
 
